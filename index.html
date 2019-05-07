@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    table {
+      font: 12px sans-serif;
+    }
+
+    .axis {
+      font: 11px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+
+    .bar-mark {
+      font: 11px sans-serif;
+      text-anchor: middle;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: white;
+      border: 1px solid #dddddd;
+      box-shadow: 2px 2px 2px #919191;
+      padding: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <p>
+    <b>
+      Despite a successful run of 26 seasons, ratings have dropped at a steady
+      rate losing an average of 7.5% of viewers each year.
+    </b>
+  </p>
+
+  <h2 style="background:#6aade4; color: white">
+    <i>Average Viewership By Season</i>
+  </h2>
+
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+
+  <script>
+    const colors = {
+      BLUE: "#6aade4"
+    };
+
+    let margin = { top: 20, right: 20, bottom: 70, left: 50 },
+      width = 1000 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+    // Parse the date / time
+    let parseDate = d3.time.format("%Y").parse;
+
+    let x = d3.scale.ordinal().rangeRoundBands([0, width], 0.25);
+
+    let y = d3.scale.linear().range([height, 0]);
+
+    let xAxis = d3.svg
+      .axis()
+      .scale(x)
+      .orient("bottom")
+      .tickFormat(d3.time.format("%Y"));
+
+    let yAxis = d3.svg
+      .axis()
+      .scale(y)
+      .orient("left")
+      .ticks(7);
+
+    let svg = d3
+      .select("body")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv("simple.csv", function(error, data) {
+      data.forEach(function(d) {
+        d.year = parseDate(d.year);
+        d.avg_viewers = +d.avg_viewers;
+      });
+
+      x.domain(
+        data.map(function(d) {
+          return d.year;
+        })
+      );
+      y.domain([
+        0,
+        d3.max(data, function(d) {
+          return d.avg_viewers;
+        })
+      ]);
+
+      let tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+      svg
+        .append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", "-.55em")
+        .attr("transform", "rotate(-90)");
+
+      svg
+        .append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -32)
+        .attr("x", -1 * (height / 2))
+        .style("text-anchor", "middle")
+        .text("Avg. Viewers (in millions)");
+
+      const bar = svg
+        .selectAll("bar")
+        .data(data)
+        .enter();
+
+      bar
+        .append("rect")
+        .style("fill", colors.BLUE)
+        .style("cursor", "pointer")
+        .attr("x", function(d) {
+          return x(d.year);
+        })
+        .attr("width", x.rangeBand())
+        .attr("y", function(d) {
+          return y(d.avg_viewers);
+        })
+        .attr("height", function(d) {
+          return height - y(d.avg_viewers);
+        })
+        .on("mouseover", function(d) {
+          d3.select(this).style("stroke", "black");
+
+          tooltip
+            .transition()
+            .duration(200)
+            .style("opacity", 1);
+
+          tooltip
+            .html(
+              `
+              <b style="color:red">Season #${d.year.getFullYear()}</b>
+
+              <table width="250px">
+              <tr>
+                  <td style="color:${
+                    colors.BLUE
+                  }"><b>Year:</b></td><td><b>${d.year.getFullYear()}</b></td>
+              </tr>
+              <tr>
+                  <td style="color:${
+                    colors.BLUE
+                  }"><b>Episodes:</b></td><td><b>${d.episodes}</b></td>
+              </tr>
+              <tr>
+                  <td style="color:${
+                    colors.BLUE
+                  }"><b>Avg Viewers (mil):</b></><td><b>${
+                d.avg_viewers
+              }</b></td>
+              </tr>
+
+              <tr>
+                  <td style="padding-top:16px; color:${
+                    colors.BLUE
+                  }"><b>Most Watched Episode:</b></td><td style="padding-top:16px;"><b>"TODO"</b></td>
+              </tr>
+              <tr>
+                  <td style="color:${
+                    colors.BLUE
+                  }"><b>Viewers (mil):</b></td><td><b>TODO</b></td>
+              </tr>
+
+              
+              </table>`
+            )
+            .style("display", "flex")
+            .style("flex-direction", "column")
+            .style("left", d3.event.pageX + 20 + "px")
+            .style("top", d3.event.pageY + 20 + "px");
+        })
+        .on("mouseout", function(d) {
+          d3.select(this).style("stroke", "none");
+          tooltip.style("opacity", 0).style("display", "none");
+        });
+
+      bar
+        .append("text")
+        .attr("class", "bar-mark")
+        .attr("x", function(d) {
+          return x(d.year) + 13;
+        })
+        .attr("y", function(d) {
+          return y(d.avg_viewers) - 2;
+        })
+        .text(d => d.avg_viewers);
+    });
+  </script>
+</body>
