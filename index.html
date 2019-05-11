@@ -52,7 +52,8 @@
 
   <script>
     const colors = {
-      BLUE: "#6aade4"
+      BLUE: "#6aade4",
+      GRAY: "#7e7e7e"
     };
 
     let margin = { top: 20, right: 20, bottom: 70, left: 50 },
@@ -102,6 +103,7 @@
       data.forEach(function(d) {
         d.year = parseDate(d.year);
         d.avg_viewers = +d.avg_viewers;
+        d.estimated = d.estimated === "true";
       });
 
       const avgViews = (
@@ -184,7 +186,7 @@
 
       bar
         .append("rect")
-        .style("fill", colors.BLUE)
+        .style("fill", d => (d.estimated ? colors.GRAY : colors.BLUE))
         .style("cursor", "pointer")
         .attr("x", function(d) {
           return x(d.year);
@@ -278,6 +280,44 @@
         .style("padding", "2px")
         .style("left", 60 + "px")
         .style("top", y(avgViews) + 110 + "px");
+
+      // render legend
+      svg
+        .append("rect")
+        .attr("x", 800)
+        .attr("y", 22)
+        .attr("width", 12)
+        .attr("height", 12)
+        .style("fill", colors.BLUE);
+      svg
+        .append("rect")
+        .attr("x", 800)
+        .attr("y", 50)
+        .attr("width", 12)
+        .attr("height", 12)
+        .style("fill", colors.GRAY);
+      svg
+        .append("text")
+        .attr("x", 820)
+        .attr("y", 30)
+        .text("Actual")
+        .style("font-size", "15px")
+        .attr("alignment-baseline", "middle");
+      svg
+        .append("text")
+        .attr("x", 820)
+        .attr("y", 57)
+        .text("Estimated")
+        .style("font-size", "15px")
+        .attr("alignment-baseline", "middle");
+
+      svg
+        .append("text")
+        .attr("x", 800)
+        .attr("y", 8)
+        .text("Viewership Data")
+        .style("font-weight", "bold")
+        .style("font-size", "16px");
     });
   </script>
 </body>
